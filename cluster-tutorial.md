@@ -4,7 +4,7 @@
 从用户的角度介绍了设置、测试和操作集群的方法。
 
 本教程不包含晦涩难懂的分布式概念，
-也没有像 :ref:`Redis 集群规范 <cluster_spec>` 那样包含 Redis 集群的实现细节，
+也没有像 `Redis 集群规范 <cluster_spec>` 那样包含 Redis 集群的实现细节，
 如果你打算深入地学习 Redis 集群的部署方法，
 那么推荐你在阅读完这个教程之后，
 再去看一看集群规范。
@@ -122,25 +122,9 @@ Redis 集群可能会丢失已经被执行过的写命令。
 那么主节点处理命令请求的速度将极大地降低 ——
 我们必须在性能和一致性之间做出权衡。
 
-..  这里的比喻似乎不太准确，而且不影响中心思想，忽略不译。
-    This is very similar 
-    to what happens 
-    with most databases 
-    that are configured to flush data to disk every second,
-    so it is a scenario you are already able to reason about 
-    because of past experiences 
-    with traditional database systems 
-    not involving distributed systems.
-
-    Similarly you can improve consistency 
-    by forcing the database to flush data on disk 
-    before replying to the client,
-    but this usually results into prohibitively low performances.
-
-.. note::
-
-    如果真的有必要的话，
-    Redis 集群可能会在将来提供同步地（synchronou）执行写命令的方法。
+```
+    如果真的有必要的话，Redis 集群可能会在将来提供同步地（synchronou）执行写命令的方法。
+```
 
 Redis 集群另外一种可能会丢失命令的情况是，
 集群出现网络分裂（\ `network partition <http://en.wikipedia.org/wiki/Network_partition>`_\ ），
@@ -194,13 +178,13 @@ Redis 集群由多个运行在集群模式（cluster mode）下的 Redis 实例�
 
 以下是一个包含了最少选项的集群配置文件示例：
 
-::
-
+```
     port 7000
     cluster-enabled yes
     cluster-config-file nodes.conf
     cluster-node-timeout 5000
     appendonly yes
+```
 
 文件中的 ``cluster-enabled`` 选项用于开实例的集群模式，
 而 ``cluster-conf-file`` 选项则设定了保存节点配置文件的路径，
@@ -221,11 +205,11 @@ Redis 集群由多个运行在集群模式（cluster mode）下的 Redis 实例�
 并创建六个以端口号为名字的子目录，
 稍后我们在将每个目录中运行一个 Redis 实例：
 
-::
-
+```
     mkdir cluster-test
     cd cluster-test
     mkdir 7000 7001 7002 7003 7004 7005
+```
 
 在文件夹 ``7000`` 至 ``7005`` 中，
 各创建一个 ``redis.conf`` 文件，
@@ -239,18 +223,18 @@ Redis 集群由多个运行在集群模式（cluster mode）下的 Redis 实例�
 然后使用类似以下命令，
 在每个标签页中打开一个实例：
 
-::
-
+```
     cd 7000
     ../redis-server ./redis.conf
+```
 
 实例打印的日志显示，
 因为 ``nodes.conf`` 文件不存在，
 所以每个节点都为它自身指定了一个新的 ID ：
 
-::
-
+```
     [82462] 26 Nov 11:56:55.329 * No cluster configuration found, I'm 97a3a64667477371c4479320d683e4c8db5858b1
+```
 
 实例会一直使用同一个 ID ，
 从而在集群中保持一个独一无二（unique）的名字。
@@ -278,10 +262,10 @@ Redis 集群由多个运行在集群模式（cluster mode）下的 Redis 实例�
 
 我们需要执行以下命令来创建集群：
 
-::
-
+```
     ./redis-trib.rb create --replicas 1 127.0.0.1:7000 127.0.0.1:7001 \
     127.0.0.1:7002 127.0.0.1:7003 127.0.0.1:7004 127.0.0.1:7005
+```
 
 命令的意义如下：
 
@@ -302,8 +286,7 @@ Redis 集群由多个运行在集群模式（cluster mode）下的 Redis 实例�
 就可以输入 ``yes`` ，
 ``redis-trib`` 就会将这份配置应用到集群当中：
 
-::
-
+```
     >>> Creating cluster
     Connecting to node 127.0.0.1:7000: OK
     Connecting to node 127.0.0.1:7001: OK
@@ -329,6 +312,7 @@ Redis 集群由多个运行在集群模式（cluster mode）下的 Redis 实例�
     S: 345ede084ac784a5c030a0387f8aaa9edfc59af3 127.0.0.1:7004
     S: 3375be2ccc321932e8853234ffa87ee9fde973ff 127.0.0.1:7005
     Can I set the above configuration? (type 'yes' to accept): yes
+```
 
 输入 ``yes`` 并按下回车确认之后，
 集群就会将配置应用到各个节点，
@@ -336,8 +320,7 @@ Redis 集群由多个运行在集群模式（cluster mode）下的 Redis 实例�
 也即是，
 让各个节点开始互相通讯：
 
-::
-
+```
     >>> Nodes configuration updated
     >>> Sending CLUSTER MEET messages to join the cluster
     Waiting for the cluster to join...
@@ -355,15 +338,16 @@ Redis 集群由多个运行在集群模式（cluster mode）下的 Redis 实例�
     M: 3375be2ccc321932e8853234ffa87ee9fde973ff 127.0.0.1:7005
     slots: (0 slots) master
     [OK] All nodes agree about slots configuration.
+```
 
 如果一切正常的话，
 ``redis-trib`` 将输出以下信息：
 
-::
-
+```
     >>> Check for open slots...
     >>> Check slots coverage...
     [OK] All 16384 slots covered.
+```
 
 这表示集群中的 ``16384`` 个槽都有至少一个主节点在处理，
 集群运作正常。
@@ -394,8 +378,7 @@ Redis 集群现阶段的一个问题是客户端实现很少。
 测试 Redis 集群比较简单的办法就是使用 ``redis-rb-cluster`` 或者 ``redis-cli`` ，
 接下来我们将使用 ``redis-cli`` 为例来进行演示：
 
-::
-
+```
     $ redis-cli -c -p 7000
     redis 127.0.0.1:7000> set foo bar
     -> Redirected to slot [12182] located at 127.0.0.1:7002
@@ -412,6 +395,7 @@ Redis 集群现阶段的一个问题是客户端实现很少。
     redis 127.0.0.1:7000> get hello
     -> Redirected to slot [866] located at 127.0.0.1:7000
     "world"
+```
 
 ``redis-cli`` 对集群的支持是非常基本的，
 所以它总是依靠 Redis 集群节点来将它转向（redirect）至正确的节点。
@@ -445,9 +429,7 @@ Redis 集群现阶段的一个问题是客户端实现很少。
 它是一个名为 `example.rb <https://github.com/antirez/redis-rb-cluster/blob/master/cluster.rb>`_ 的文件，
 包含在\ `redis-rb-cluster 项目里面 <https://github.com/antirez/redis-rb-cluster>`_\ ：
 
-.. code-block:: ruby
-    :linenos:
-
+```
     require './cluster'
 
     startup_nodes = [
@@ -478,11 +460,12 @@ Redis 集群现阶段的一个问题是客户端实现很少。
         end
         sleep 0.1
     }
+```
 
 这个应用所做的工作非常简单：
 它不断地以 ``foo<number>`` 为键，
 ``number`` 为值，
-使用 :ref:`SET` 命令向数据库设置键值对。
+使用 `SET` 命令向数据库设置键值对。
 
 如果我们执行这个应用的话，
 应用将按顺序执行以下命令：
@@ -543,22 +526,9 @@ Redis 集群现阶段的一个问题是客户端实现很少。
 这个循环负责设置键值对，
 并在设置出错时打印错误信息。
 
-程序在主循环的末尾添加了一个 ``sleep`` 调用，
-让写操作的执行速度变慢，
-帮助执行示例的人更容易看清程序的输出。
+程序在主循环的末尾添加了一个 ``sleep`` 调用，让写操作的执行速度变慢，帮助执行示例的人更容易看清程序的输出。
 
-..  省略了翻译其中的 In you tests ...
-    In your tests you can remove the sleep 
-    if you want to write to the cluster as fast as possible 
-    (relatively to the fact that 
-    this is a busy loop without real parallelism of course,
-    so you'll get the usually 10k ops/second 
-    in the best of the conditions).
-
-执行 ``example.rb`` 程序将产生以下输出：
-
-::
-
+```
     ruby ./example.rb
     1
     2
@@ -570,11 +540,10 @@ Redis 集群现阶段的一个问题是客户端实现很少。
     8
     9
     ...
+```
 
-这个程序并不是十分有趣，
-稍后我们就会看到一个更有趣的集群应用示例，
-不过在此之前，
-让我们先使用这个示例来演示集群的重新分片操作。
+这个程序并不是十分有趣，稍后我们就会看到一个更有趣的集群应用示例，
+不过在此之前，让我们先使用这个示例来演示集群的重新分片操作。
 
 
 ## 对集群进行重新分片
@@ -595,9 +564,9 @@ Redis 集群现阶段的一个问题是客户端实现很少。
 
 执行以下命令可以开始一次重新分片操作：
 
-::
-
+```
     $ ./redis-trib.rb reshard 127.0.0.1:7000
+```
 
 你只需要指定集群中其中一个节点的地址，
 ``redis-trib`` 就会自动找到集群中的其他节点。
@@ -609,8 +578,7 @@ Redis 集群现阶段的一个问题是客户端实现很少。
 
 执行 ``redis-trib`` 的第一步就是设定你打算移动的哈希槽的数量：
 
-::
-
+```
     $ ./redis-trib.rb reshard 127.0.0.1:7000
     Connecting to node 127.0.0.1:7000: OK
     Connecting to node 127.0.0.1:7002: OK
@@ -636,6 +604,7 @@ Redis 集群现阶段的一个问题是客户端实现很少。
     >>> Check slots coverage...
     [OK] All 16384 slots covered.
     How many slots do you want to move (from 1 to 16384)? 1000
+```
 
 我们将打算移动的槽数量设置为 ``1000`` 个，
 如果 ``example.rb`` 程序一直运行着的话，
@@ -654,21 +623,19 @@ Redis 集群现阶段的一个问题是客户端实现很少。
 而节点 ID 则是 ``9991306f0e50640a5684f1958fd754b38fa034c9`` ，
 那么我们应该向 ``redis-trib`` 提供节点的 ID ：
 
-::
-
+```
     $ ./redis-trib.rb reshard 127.0.0.1:7000
     ...
-    What is the receiving node ID? 9991306f0e50640a5684f1958fd754b38fa034c9
+    What is the receiving node ID?9991306f0e50640a5684f1958fd754b38fa034c9
+```
 
-.. note::
 
-    ``redis-trib`` 会打印出集群中所有节点的 ID ，
-    并且我们也可以通过执行以下命令来获得节点的运行 ID ：
+redis-trib 会打印出集群中所有节点的 ID ，并且我们也可以通过执行以下命令来获得节点的运行 ID ：
 
-    ::
-
-        $ ./redis-cli -p 7000 cluster nodes | grep myself
-        9991306f0e50640a5684f1958fd754b38fa034c9 :0 myself,master - 0 0 0 connected 0-5460
+```
+$ ./redis-cli -p 7000 cluster nodes | grep myself
+9991306f0e50640a5684f1958fd754b38fa034c9 :0 myself,master - 0 0 0 connected 0-5460
+```
 
 接着，
 ``redis-trib`` 会向你询问重新分片的源节点（source node），
@@ -684,22 +651,21 @@ Redis 集群现阶段的一个问题是客户端实现很少。
 凑够 ``1000`` 个，
 然后移动到目标节点上面：
 
-::
-
+```
     $ ./redis-trib.rb reshard 127.0.0.1:7000
     ...
     Please enter all the source node IDs.
     Type 'all' to use all the nodes as source nodes for the hash slots.
     Type 'done' once you entered all the source nodes IDs.
     Source node #1:all
+```
 
 输入 ``all`` 并按下回车之后，
 ``redis-trib`` 将打印出哈希槽的移动计划，
 如果你觉得没问题的话，
 就可以输入 ``yes`` 并再次按下回车：
 
-::
-
+```
     $ ./redis-trib.rb reshard 127.0.0.1:7000
     ...
     Moving slot 11421 from 393c6df5eb4b4cec323f0e4ca961c8b256e3460a
@@ -709,13 +675,13 @@ Redis 集群现阶段的一个问题是客户端实现很少。
     ...
     Moving slot 5959 from e68e52cee0550f558b03b342f2f0354d2b8a083b
     Do you want to proceed with the proposed reshard plan (yes/no)? yes
+```
 
 输入 ``yes`` 并使用按下回车之后，
 ``redis-trib`` 就会正式开始执行重新分片操作，
 将指定的哈希槽从源节点一个个地移动到目标节点上面：
 
-::
-
+```
     $ ./redis-trib.rb reshard 127.0.0.1:7000
     ...
     Moving slot 5934 from 127.0.0.1:7001 to 127.0.0.1:7000: 
@@ -724,6 +690,7 @@ Redis 集群现阶段的一个问题是客户端实现很少。
     Moving slot 5937 from 127.0.0.1:7001 to 127.0.0.1:7000: 
     ...
     Moving slot 5959 from 127.0.0.1:7001 to 127.0.0.1:7000: 
+```
 
 在重新分片的过程中，
 ``example.rb`` 应该可以继续正常运行，
@@ -732,8 +699,7 @@ Redis 集群现阶段的一个问题是客户端实现很少。
 在重新分片操作执行完毕之后，
 可以使用以下命令来检查集群是否正常：
 
-::
-
+```
     $ ./redis-trib.rb check 127.0.0.1:7000
     Connecting to node 127.0.0.1:7000: OK
     Connecting to node 127.0.0.1:7002: OK
@@ -758,15 +724,11 @@ Redis 集群现阶段的一个问题是客户端实现很少。
     >>> Check for open slots...
     >>> Check slots coverage...
     [OK] All 16384 slots covered.
+```
 
-根据检查结果显示，
-集群运作正常。
+根据检查结果显示，集群运作正常。
 
-需要注意的就是，
-在三个主节点中，
-节点 ``127.0.0.1:7000`` 包含了 ``6461`` 个哈希槽，
-而节点 ``127.0.0.1:7001`` 和节点 ``127.0.0.1:7002`` 都只包含了 ``4961`` 个哈希槽，
-因为后两者都将自己的 ``500`` 个哈希槽移动到了节点 ``127.0.0.1:7000`` 。
+需要注意的就是，在三个主节点中，节点 ``127.0.0.1:7000`` 包含了 ``6461`` 个哈希槽，而节点 ``127.0.0.1:7001`` 和节点 ``127.0.0.1:7002`` 都只包含了 ``4961`` 个哈希槽，因为后两者都将自己的 ``500`` 个哈希槽移动到了节点 ``127.0.0.1:7000`` 。
 
 
 ## 一个更有趣的示例应用
@@ -775,7 +737,7 @@ Redis 集群现阶段的一个问题是客户端实现很少。
 因为它只是不断地对集群进行写入，
 但并不检查写入结果是否正确。
 比如说，
-集群可能会错误地将 ``example.rb`` 发送的所有 :ref:`SET` 命令都改成了 ``SET foo 42`` ，
+集群可能会错误地将 ``example.rb`` 发送的所有 `SET` 命令都改成了 ``SET foo 42`` ，
 但因为 ``example.rb`` 并不检查写入后的值，
 所以它不会意识到集群实际上写入的值是错误的。
 
@@ -783,28 +745,28 @@ Redis 集群现阶段的一个问题是客户端实现很少。
 `redis-rb-cluster 项目 <https://github.com/antirez/redis-rb-cluster>`_\ 包含了一个名为 `consistency-test.rb <https://github.com/antirez/redis-rb-cluster/blob/master/consistency-test.rb>`_ 的示例应用，
 这个应用比起 ``example.rb`` 有趣得多：
 它创建了多个计数器（默认为 ``1000`` 个），
-并通过发送 :ref:`INCR` 命令来增加这些计数器的值。
+并通过发送 `INCR` 命令来增加这些计数器的值。
 
 在增加计数器值的同时，
 ``consistency-test.rb`` 还执行以下操作：
 
-- 每次使用 :ref:`INCR` 命令更新一个计数器时，
-  应用会记录下计数器执行 :ref:`INCR` 命令之后应该有的值。
+- 每次使用 `INCR` 命令更新一个计数器时，
+  应用会记录下计数器执行 `INCR` 命令之后应该有的值。
   举个例子，
   如果计数器的起始值为 ``0`` ，
-  而这次是程序第 ``50`` 次向它发送 :ref:`INCR` 命令，
+  而这次是程序第 ``50`` 次向它发送 `INCR` 命令，
   那么计数器的值应该是 ``50`` 。
 
-- 在每次发送 :ref:`INCR` 命令之前，
+- 在每次发送 `INCR` 命令之前，
   程序会随机从集群中读取一个计数器的值，
   并将它与自己记录的值进行对比，
   看两个值是否相同。
 
 换句话说，
 这个程序是一个一致性检查器（consistency checker）：
-如果集群在执行 :ref:`INCR` 命令的过程中，
-丢失了某条 :ref:`INCR` 命令，
-又或者多执行了某条客户端没有确认到的 :ref:`INCR` 命令，
+如果集群在执行 `INCR` 命令的过程中，
+丢失了某条 `INCR` 命令，
+又或者多执行了某条客户端没有确认到的 `INCR` 命令，
 那么检查器将察觉到这一点 ——
 在前一种情况中，
 ``consistency-test.rb`` 记录的计数器值将比集群记录的计数器值要大；
@@ -813,8 +775,7 @@ Redis 集群现阶段的一个问题是客户端实现很少。
 
 运行 ``consistency-test`` 程序将产生类似以下的输出：
 
-::
-
+```
     $ ruby consistency-test.rb
     925 R (0 err) | 925 W (0 err) |
     5030 R (0 err) | 5030 W (0 err) |
@@ -823,6 +784,7 @@ Redis 集群现阶段的一个问题是客户端实现很少。
     17780 R (0 err) | 17780 W (0 err) |
     22025 R (0 err) | 22025 W (0 err) |
     25818 R (0 err) | 25818 W (0 err) |
+```
 
 每行输出都打印了程序执行的读取次数和写入次数，
 以及执行操作的过程中因为集群不可用而产生的错误数。
@@ -834,26 +796,26 @@ Redis 集群现阶段的一个问题是客户端实现很少。
 如果我们在 ``consistency-test.rb`` 运行的过程中，
 手动修改某个计数器的值：
 
-::
-
+```
     $ redis 127.0.0.1:7000> set key_217 0
     OK
+```
 
 那么 ``consistency-test.rb`` 将向我们报告不一致情况：
 
-::
-
+```
     (in the other tab I see...)
 
     94774 R (0 err) | 94774 W (0 err) |
     98821 R (0 err) | 98821 W (0 err) |
     102886 R (0 err) | 102886 W (0 err) | 114 lost |
     107046 R (0 err) | 107046 W (0 err) | 114 lost |
+```
 
 在我们修改计数器值的时候，
-计数器的正确值是 ``114`` （执行了 ``114`` 次 :ref:`INCR` 命令），
+计数器的正确值是 ``114`` （执行了 ``114`` 次 `INCR` 命令），
 因为我们将计数器的值设成了 ``0`` ，
-所以 ``consistency-test.rb`` 会向我们报告说丢失了 ``114`` 个 :ref:`INCR` 命令。
+所以 ``consistency-test.rb`` 会向我们报告说丢失了 ``114`` 个 `INCR` 命令。
 
 因为这个示例程序具有一致性检查功能，
 所以我们用它来测试 Redis 集群的故障转移操作。
@@ -861,40 +823,38 @@ Redis 集群现阶段的一个问题是客户端实现很少。
 
 ## 故障转移测试
 
-.. note::
-
-    在执行本节操作的过程中，
-    请一直运行 ``consistency-test`` 程序。
+```
+    在执行本节操作的过程中，请一直运行 ``consistency-test`` 程序。
+```
 
 要触发一次故障转移，
 最简单的办法就是令集群中的某个主节点进入下线状态。
 
 首先用以下命令列出集群中的所有主节点：
 
-::
-
+```
     $ redis-cli -p 7000 cluster nodes | grep master
     3e3a6cb0d9a9a87168e266b0a0b24026c0aae3f0 127.0.0.1:7001 master - 0 1385482984082 0 connected 5960-10921
     2938205e12de373867bf38f1ca29d31d0ddb3e46 127.0.0.1:7002 master - 0 1385482983582 0 connected 11423-16383
     97a3a64667477371c4479320d683e4c8db5858b1 :0 myself,master - 0 0 0 connected 0-5959 10922-11422
+```
 
 通过命令输出，
 我们知道端口号为 ``7000`` 、 ``7001`` 和 ``7002`` 的节点都是主节点，
-然后我们可以通过向端口号为 ``7002`` 的主节点发送 :ref:`DEBUG_SEGFAULT` 命令，
+然后我们可以通过向端口号为 ``7002`` 的主节点发送 `DEBUG_SEGFAULT` 命令，
 让这个主节点崩溃：
 
-::
-
+```
     $ redis-cli -p 7002 debug segfault
     Error: Server closed the connection
+```
 
 现在，
 切换到运行着 ``consistency-test`` 的标签页，
 可以看到，
 ``consistency-test`` 在 ``7002`` 下线之后的一段时间里将产生大量的错误警告信息：
 
-::
-
+```
     18849 R (0 err) | 18849 W (0 err) |
     23151 R (0 err) | 23151 W (0 err) |
     27302 R (0 err) | 27302 W (0 err) |
@@ -906,12 +866,7 @@ Redis 集群现阶段的一个问题是客户端实现很少。
     37918 R (578 err) | 37919 W (577 err) |
     42077 R (578 err) | 42078 W (577 err) |
 
-..
-    As you can see 
-    during the failover 
-    the system was not able to accept 578 reads and 577 writes,
-    however 
-    no inconsistency was created in the database.
+```
 
 从 ``consistency-test`` 的这段输出可以看到，
 集群在执行故障转移期间，
@@ -940,8 +895,7 @@ Redis 使用的是异步复制，
 查看集群在执行故障转移操作之后，
 主从节点的布局情况：
 
-::
-
+```
     $ redis-cli -p 7000 cluster nodes
     3fc783611028b1707fd65345e763befb36454d73 127.0.0.1:7004 slave 3e3a6cb0d9a9a87168e266b0a0b24026c0aae3f0 0 1385503418521 0 connected
     a211e242fc6b22a9427fed61285e85892fa04e08 127.0.0.1:7003 slave 97a3a64667477371c4479320d683e4c8db5858b1 0 1385503419023 0 connected
@@ -949,6 +903,7 @@ Redis 使用的是异步复制，
     3c3a0c74aae0b56170ccb03a76b60cfe7dc1912e 127.0.0.1:7005 master - 0 1385503419023 3 connected 11423-16383
     3e3a6cb0d9a9a87168e266b0a0b24026c0aae3f0 127.0.0.1:7001 master - 0 1385503417005 0 connected 5960-10921
     2938205e12de373867bf38f1ca29d31d0ddb3e46 127.0.0.1:7002 slave 3c3a0c74aae0b56170ccb03a76b60cfe7dc1912e 0 1385503418016 3 connected
+```
 
 我重启了之前下线的 ``127.0.0.1:7002`` 节点，
 该节点已经从原来的主节点变成了从节点，
@@ -970,12 +925,12 @@ Redis 使用的是异步复制，
   那么跟在 ``flags`` 之后的将是主节点的节点 ID ：
   例如 ``127.0.0.1:7002`` 的主节点的节点 ID 就是 ``3c3a0c74aae0b56170ccb03a76b60cfe7dc1912e`` 。
 
-- 集群最近一次向节点发送 :ref:`PING` 命令之后，
+- 集群最近一次向节点发送 `PING` 命令之后，
   过去了多长时间还没接到回复。
 
 - 节点最近一次返回 ``PONG`` 回复的时间。
 
-- 节点的配置纪元（configuration epoch）：详细信息请参考 :ref:`cluster_spec` 。
+- 节点的配置纪元（configuration epoch）：详细信息请参考 `cluster_spec` 。
 
 - 本节点的网络连接情况：例如 ``connected`` 。
 
@@ -1026,34 +981,19 @@ Redis 使用的是异步复制，
 执行以下命令，
 将这个新节点添加到集群里面：
 
-::
-
+```
     ./redis-trib.rb add-node 127.0.0.1:7006 127.0.0.1:7000
+```
 
 命令中的 ``add-node`` 表示我们要让 ``redis-trib`` 将一个节点添加到集群里面，
 ``add-node`` 之后跟着的是新节点的 IP 地址和端口号，
 再之后跟着的是集群中任意一个已存在节点的 IP 地址和端口号，
 这里我们使用的是 ``127.0.0.1:7000`` 。
 
-..  太底层，似乎和作者的高层抽象的描述不符，暂时不译
-
-    In practical terms 
-    redis-trib here did very little to help us,
-    it just sent a CLUSTER MEET message to the node,
-    something that is also possible to accomplish manually.
-
-    However 
-    redis-trib also checks the state of the cluster before to operate,
-    that is an advantage,
-    and will be improved more and more in the future 
-    in order to also be able to rollback changes when needed 
-    or to help the user to fix a messed up cluster when there are issues.
-
 通过 ``cluster nodes`` 命令，
 我们可以确认新节点 ``127.0.0.1:7006`` 已经被添加到集群里面了：
 
-::
-
+```
     redis 127.0.0.1:7006> cluster nodes
     3e3a6cb0d9a9a87168e266b0a0b24026c0aae3f0 127.0.0.1:7001 master - 0 1385543178575 0 connected 5960-10921
     3fc783611028b1707fd65345e763befb36454d73 127.0.0.1:7004 slave 3e3a6cb0d9a9a87168e266b0a0b24026c0aae3f0 0 1385543179583 0 connected
@@ -1062,6 +1002,7 @@ Redis 使用的是异步复制，
     a211e242fc6b22a9427fed61285e85892fa04e08 127.0.0.1:7003 slave 97a3a64667477371c4479320d683e4c8db5858b1 0 1385543178575 0 connected
     97a3a64667477371c4479320d683e4c8db5858b1 127.0.0.1:7000 master - 0 1385543179080 0 connected 0-5959 10922-11422
     3c3a0c74aae0b56170ccb03a76b60cfe7dc1912e 127.0.0.1:7005 master - 0 1385543177568 3 connected 11423-16383
+```
 
 新节点现在已经连接上了集群，
 成为集群的一份子，
@@ -1094,20 +1035,20 @@ Redis 使用的是异步复制，
 那么我们只要用客户端连接上新节点，
 然后执行以下命令就可以了：
 
-::
-
+```
     redis 127.0.0.1:7006> cluster replicate 3c3a0c74aae0b56170ccb03a76b60cfe7dc1912e
+```
 
 其中命令提供的 ``3c3a0c74aae0b56170ccb03a76b60cfe7dc1912e`` 就是主节点 ``127.0.0.1:7005`` 的节点 ID 。
 
 执行 ``cluster replicate`` 命令之后，
 我们可以使用以下命令来确认 ``127.0.0.1:7006`` 已经成为了 ID 为 ``3c3a0c74aae0b56170ccb03a76b60cfe7dc1912e`` 的节点的从节点：
 
-::
-
+```
     $ redis-cli -p 7000 cluster nodes | grep slave | grep 3c3a0c74aae0b56170ccb03a76b60cfe7dc1912e
     f093c80dde814da99c5cf72a7dd01590792b783b 127.0.0.1:7006 slave 3c3a0c74aae0b56170ccb03a76b60cfe7dc1912e 0 1385543617702 3 connected
     2938205e12de373867bf38f1ca29d31d0ddb3e46 127.0.0.1:7002 slave 3c3a0c74aae0b56170ccb03a76b60cfe7dc1912e 0 1385543617198 3 connected
+```
 
 ``3c3a0c...`` 现在有两个从节点，
 一个从节点的端口号为 ``7002`` ，
